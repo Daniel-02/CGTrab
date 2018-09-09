@@ -1,6 +1,5 @@
 import numpy as np
 import cv2
-from matplotlib import pyplot as plt
 
 # Letter A
 letterAvertsOg = [[-75, 50],
