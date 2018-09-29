@@ -1,19 +1,47 @@
 import numpy as np
 import cv2
+from time import sleep
+from screeninfo import get_monitors
 
 # Letter A
-letterAvertsOg = [[-75, 50],
-                [0, -100],
-                [-75, 50],
-                [-38, 50],
-                [-25, 25],
-                [75, 50],
-                [37, 50],
-                [25, 25],
-                [-25, 0],
-                [25, 0],
-                [0, -50],
-                ]
+# letterAvertsT = [[-75, 150],
+#                  [0, 0],
+#                  [-75, 150],
+#                  [-38, 150],
+#                  [-25, 125],
+#                  [75, 150],
+#                  [37, 150],
+#                  [25, 125],
+#                  [-25, 100],
+#                  [25, 100],
+#                  [0, 50],
+#                  ]
+
+# letterAvertsOg = [[-5, 0, 1],
+#                   [0, 19, 1],
+#                   [-5, 0, 1],
+#                   [-2, 0, 1],
+#                   [-1, 3, 1],
+#                   [5, 0, 1],
+#                   [2, 0, 1],
+#                   [1, 3, 1],
+#                   [-1, 6, 1],
+#                   [1, 6, 1],
+#                   [0, 12, 1],
+#                   ]
+letterAvertsOg = [[-10, 0, 1],
+                  [-5, 19, 1],
+                  [-10, 0, 1],
+                  [-7, 0, 1],
+                  [-6, 3, 1],
+                  [0, 0, 1],
+                  [-3, 0, 1],
+                  [-4, 3, 1],
+                  [-6, 6, 1],
+                  [-4, 6, 1],
+                  [-5, 12, 1],
+                  ]
+
 letterAedges = [[0, 1],
                 [0, 3],
                 [3, 4],
@@ -26,39 +54,79 @@ letterAedges = [[0, 1],
                 [9, 10],
                 ]
 aDrawn = False
+xDisplay = 1280
+yDisplay = 800
+xUniverse = 100
+yUniverse = 100
+xMovInit = 100
+yMovInit = 50
+xMovEnd = 50
+yMovEnd = 50
+totalFrames = 100
+
+
+def convert_x_universe_to_x_display(x_u):
+    global xUniverse, xDisplay
+    return int(x_u * xDisplay / xUniverse)
+
+
+def convert_y_universe_to_y_display(y_u):
+    global yUniverse, yDisplay
+    return int(y_u * ((-yDisplay) / yUniverse) + yDisplay)
+
+
+def coord_to_draw(coord):
+    return [convert_x_universe_to_x_display(coord[0] / coord[2]), convert_y_universe_to_y_display(coord[1] / coord[2])]
+
+
 # mouse callback function
-def draw_A_click(event,x,y,flags,param):
+def draw_a_click(event, x, y, flags, param):
     global aDrawn
     if event == cv2.EVENT_LBUTTONDOWN:
         if not aDrawn:
-            draw_A(x,y)
+            draw_a(x, y)
             aDrawn = True
-        # cv2.circle(img,(x,y),100,(255,0,0),-1)
-# Draw letter A edges
-def draw_A(x,y):
-    global letterAvertsOg, letterAedges
-    letterAverts = [[x + n[0], y + n[1]] for n in letterAvertsOg]
-    cv2.line(img, tuple(letterAverts[letterAedges[0][0]]), tuple(letterAverts[letterAedges[0][1]]), (255, 0, 0), 4)
-    cv2.line(img, tuple(letterAverts[letterAedges[1][0]]), tuple(letterAverts[letterAedges[1][1]]), (255, 0, 0), 4)
-    cv2.line(img, tuple(letterAverts[letterAedges[2][0]]), tuple(letterAverts[letterAedges[2][1]]), (255, 0, 0), 4)
-    cv2.line(img, tuple(letterAverts[letterAedges[3][0]]), tuple(letterAverts[letterAedges[3][1]]), (255, 0, 0), 4)
-    cv2.line(img, tuple(letterAverts[letterAedges[4][0]]), tuple(letterAverts[letterAedges[4][1]]), (255, 0, 0), 4)
-    cv2.line(img, tuple(letterAverts[letterAedges[5][0]]), tuple(letterAverts[letterAedges[5][1]]), (255, 0, 0), 4)
-    cv2.line(img, tuple(letterAverts[letterAedges[6][0]]), tuple(letterAverts[letterAedges[6][1]]), (255, 0, 0), 4)
-    cv2.line(img, tuple(letterAverts[letterAedges[7][0]]), tuple(letterAverts[letterAedges[7][1]]), (255, 0, 0), 4)
-    cv2.line(img, tuple(letterAverts[letterAedges[8][0]]), tuple(letterAverts[letterAedges[8][1]]), (255, 0, 0), 4)
-    cv2.line(img, tuple(letterAverts[letterAedges[9][0]]), tuple(letterAverts[letterAedges[9][1]]), (255, 0, 0), 4)
 
-# plt.imshow(img, cmap = 'gray', interpolation = 'bicubic')
-# plt.xticks([]), plt.yticks([])  # to hide tick values on X and Y axis
-# plt.show()
+
+def calculate_a(x, y, frameCount):
+    # global letterAvertsT, letterAedges
+    transMatrix = [[1, 0, 0],
+                   [0, 1, 0],
+                   [x, y, 1]]
+    rotMatrix = [
+        [np.cos((np.pi / (2 * totalFrames)) * frameCount), -np.sin((np.pi / (2 * totalFrames)) * frameCount), 0],
+        [np.sin((np.pi / (2 * totalFrames)) * frameCount), np.cos((np.pi / (2 * totalFrames)) * frameCount), 0],
+        [0, 0, 1]]
+    letter_a_verts = [np.matmul([n[0], n[1], n[2]],
+                                np.matmul(rotMatrix, transMatrix)).tolist() for n in letterAvertsOg]
+    draw_a(letter_a_verts)
+
+
+# Draw letter A edges
+def draw_a(verts):
+    for letterAedge in letterAedges:
+        cv2.line(img, tuple(coord_to_draw(verts[letterAedge[0]])),
+                 tuple(coord_to_draw(verts[letterAedge[1]])), (255, 0, 0), 4)
+
+
 # Create a black image
-img = np.zeros((600, 900, 3), np.uint8)
-cv2.namedWindow('ESC para sair')
-cv2.setMouseCallback('ESC para sair',draw_A_click)
-while (1):
+for m in get_monitors():
+    print(str(m))
+img = np.zeros((yDisplay, xDisplay, 3), np.uint8)  # (Y, X) do display
+# cv2.namedWindow('ESC para sair')
+# cv2.setMouseCallback('ESC para sair', draw_a_click)
+frameCount = 1
+
+while frameCount < totalFrames:
+    calculate_a(xMovInit - (xMovEnd / totalFrames) * frameCount,
+                yMovInit - (yMovEnd / totalFrames) * frameCount, frameCount)
+    sleep(0.005)
     cv2.imshow('ESC para sair', img)
-    # cv2.line(img, (0,0), (x, x), (255, 0, 0))
+    cv2.rectangle(img, (0, 0), (xDisplay, yDisplay), (0, 0, 0), -1)
+    frameCount += 1
+    if frameCount > totalFrames - 1:
+        frameCount = 1
     if cv2.waitKey(20) & 0xFF == 27:
         break
+
 cv2.destroyAllWindows()
