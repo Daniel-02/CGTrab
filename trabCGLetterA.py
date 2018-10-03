@@ -53,26 +53,25 @@ letterAedges = [[0, 1],
                 [8, 10],
                 [9, 10],
                 ]
-aDrawn = False
 xDisplay = 1280
 yDisplay = 800
 xUniverse = 100
 yUniverse = 100
 xMovInit = 100
-yMovInit = 50
-xMovEnd = 50
-yMovEnd = 50
+yMovInit = 42
+xMovEnd = 0
+yMovEnd = 100
 totalFrames = 100
 
 
 def convert_x_universe_to_x_display(x_u):
     global xUniverse, xDisplay
-    return int(x_u * xDisplay / xUniverse)
+    return int(round(x_u * xDisplay / xUniverse))
 
 
 def convert_y_universe_to_y_display(y_u):
     global yUniverse, yDisplay
-    return int(y_u * ((-yDisplay) / yUniverse) + yDisplay)
+    return int(round(y_u * ((-yDisplay) / yUniverse) + yDisplay))
 
 
 def coord_to_draw(coord):
@@ -80,12 +79,12 @@ def coord_to_draw(coord):
 
 
 # mouse callback function
-def draw_a_click(event, x, y, flags, param):
-    global aDrawn
-    if event == cv2.EVENT_LBUTTONDOWN:
-        if not aDrawn:
-            draw_a(x, y)
-            aDrawn = True
+# def draw_a_click(event, x, y, flags, param):
+#     global aDrawn
+#     if event == cv2.EVENT_LBUTTONDOWN:
+#         if not aDrawn:
+#             draw_a(x, y)
+#             aDrawn = True
 
 
 def calculate_a(x, y, frameCount):
@@ -97,8 +96,7 @@ def calculate_a(x, y, frameCount):
         [np.cos((np.pi / (2 * totalFrames)) * frameCount), -np.sin((np.pi / (2 * totalFrames)) * frameCount), 0],
         [np.sin((np.pi / (2 * totalFrames)) * frameCount), np.cos((np.pi / (2 * totalFrames)) * frameCount), 0],
         [0, 0, 1]]
-    letter_a_verts = [np.matmul([n[0], n[1], n[2]],
-                                np.matmul(rotMatrix, transMatrix)).tolist() for n in letterAvertsOg]
+    letter_a_verts = [np.matmul(n, np.matmul(rotMatrix, transMatrix)).tolist() for n in letterAvertsOg]
     draw_a(letter_a_verts)
 
 
@@ -109,24 +107,25 @@ def draw_a(verts):
                  tuple(coord_to_draw(verts[letterAedge[1]])), (255, 0, 0), 4)
 
 
-# Create a black image
+# Get screen display
 for m in get_monitors():
     print(str(m))
+# Create a black image
 img = np.zeros((yDisplay, xDisplay, 3), np.uint8)  # (Y, X) do display
 # cv2.namedWindow('ESC para sair')
 # cv2.setMouseCallback('ESC para sair', draw_a_click)
-frameCount = 1
-
+frameCount = 0
 while frameCount < totalFrames:
-    calculate_a(xMovInit - (xMovEnd / totalFrames) * frameCount,
-                yMovInit - (yMovEnd / totalFrames) * frameCount, frameCount)
-    sleep(0.005)
+    calculate_a(xMovInit - ((xMovInit - xMovEnd) / totalFrames) * frameCount,
+                yMovInit - ((yMovInit - yMovEnd) / totalFrames) * frameCount, frameCount)
+    sleep(0.02)
     cv2.imshow('ESC para sair', img)
     cv2.rectangle(img, (0, 0), (xDisplay, yDisplay), (0, 0, 0), -1)
     frameCount += 1
-    if frameCount > totalFrames - 1:
+    if frameCount == totalFrames:
         frameCount = 1
     if cv2.waitKey(20) & 0xFF == 27:
         break
+
 
 cv2.destroyAllWindows()
