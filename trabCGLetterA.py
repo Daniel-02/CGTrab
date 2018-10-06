@@ -53,8 +53,8 @@ letterAedges = [[0, 1],
                 [8, 10],
                 [9, 10],
                 ]
-xDisplay = 1280
-yDisplay = 800
+xDisplay = 1200
+yDisplay = 900
 xUniverse = 100
 yUniverse = 100
 xMovInit = 100
@@ -93,8 +93,8 @@ def calculate_a(x, y, frameCount):
                    [0, 1, 0],
                    [x, y, 1]]
     rotMatrix = [
-        [np.cos((np.pi / (2 * totalFrames)) * frameCount), -np.sin((np.pi / (2 * totalFrames)) * frameCount), 0],
-        [np.sin((np.pi / (2 * totalFrames)) * frameCount), np.cos((np.pi / (2 * totalFrames)) * frameCount), 0],
+        [np.cos((np.pi / (2 * totalFrames)) * frameCount), np.sin((np.pi / (2 * totalFrames)) * frameCount), 0],
+        [-np.sin((np.pi / (2 * totalFrames)) * frameCount), np.cos((np.pi / (2 * totalFrames)) * frameCount), 0],
         [0, 0, 1]]
     letter_a_verts = [np.matmul(n, np.matmul(rotMatrix, transMatrix)).tolist() for n in letterAvertsOg]
     draw_a(letter_a_verts)
