@@ -57,11 +57,11 @@ letterAEdges = [[0, 1],
                 [4, 5],
                 [5, 6],
                 [6, 3],
-                [7, 8],
-                [7, 9],
+                [8, 7],
+                [9, 7],
                 [8, 9],  # 9
                 [10, 11],
-                [12, 10],
+                [10, 12],  # Invertido
                 [13, 12],
                 [11, 14],
                 [14, 15],
@@ -84,16 +84,16 @@ letterAEdges = [[0, 1],
 
 letterAFaces = [[0, 3, 4, 5, 6, 2, 1],
                 [10, 13, 14, 15, 16, 12, 11],
+                [20, 11, 22, 1],
                 [20, 10, 21, 0],
-                [1, 20, 11, 22],
-                [2, 22, 12, 23],
-                [6, 23, 16, 26],
-                [5, 25, 15, 26],
+                [21, 13, 24, 3],
                 [4, 25, 14, 24],
-                [3, 24, 13, 21],
+                [25, 15, 26, 5],
+                [6, 23, 16, 26],
+                [2, 22, 12, 23],
                 [7, 27, 17, 28],
-                [8, 27, 18, 29],
-                [9, 28, 19, 29],
+                [27, 18, 29, 8],
+                [28, 19, 29, 9],
                 ]
 
 xDisplay = 1200
@@ -187,7 +187,7 @@ def calculate_a(x, y, frameCount, ang):
 
 
 # Draw letter A edges
-def draw_a(verts, edges):
+def draw_a(verts):
     for letterAEdge in letterAEdges:
         cv2.line(img, tuple(coord_to_draw(verts[letterAEdge[0]])),
                  tuple(coord_to_draw(verts[letterAEdge[1]])), (255, 0, 0), 1)
@@ -206,11 +206,13 @@ img = np.zeros((yDisplay, xDisplay, 3), np.uint8)  # (Y, X) do display
 frameCount = 0
 visibleFaces = visible_faces()
 edgesToDraw = edges_to_draw(visibleFaces)
+print(visibleFaces)
 
 while frameCount < totalFrames:
     # calculate_a(xMovInit - ((xMovInit - xMovEnd) / totalFrames) * frameCount,
     #             yMovInit - ((yMovInit - yMovEnd) / totalFrames) * frameCount, frameCount, 2*np.pi/3)
     calculate_a_observer(50, 50, 0, edgesToDraw)
+    # calculate_a(50, 50, 0, 2*np.pi/3)
     sleep(0.015)
     cv2.imshow('ESC para sair', img)
     cv2.rectangle(img, (0, 0), (xDisplay, yDisplay), (0, 0, 0), -1)
