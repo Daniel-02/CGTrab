@@ -51,22 +51,22 @@ letterAvertsOg = [[-10, 0, 0, 1],  # Ponto de baixo esquerdo 0
                   ]
 
 letterAEdges = [[0, 1],
-                [0, 2],
-                [2, 3],
+                [2, 0],
+                [3, 2],
                 [1, 4],
-                [5, 4],
+                [4, 5],
                 [5, 6],
-                [3, 6],
+                [6, 3],
                 [7, 8],
                 [7, 9],
                 [8, 9],  # 9
                 [10, 11],
-                [10, 12],
-                [12, 13],
+                [12, 10],
+                [13, 12],
                 [11, 14],
-                [15, 14],
+                [14, 15],
                 [15, 16],
-                [13, 16],
+                [16, 13],
                 [17, 18],
                 [17, 19],
                 [18, 19],  # 19
@@ -82,9 +82,9 @@ letterAEdges = [[0, 1],
                 [9, 19],
                 ]
 
-letterAFaces = [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-                [10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
-                [0, 20, 10, 21],
+letterAFaces = [[0, 3, 4, 5, 6, 2, 1],
+                [10, 13, 14, 15, 16, 12, 11],
+                [20, 10, 21, 0],
                 [1, 20, 11, 22],
                 [2, 22, 12, 23],
                 [6, 23, 16, 26],
@@ -105,7 +105,7 @@ yMovInit = 42
 xMovEnd = 0
 yMovEnd = 100
 totalFrames = 75
-
+observerVertice = [0, 0, 100]
 
 def convert_x_universe_to_x_display(x_u):
     global xUniverse, xDisplay
@@ -129,6 +129,42 @@ def coord_to_draw(coord):
 #             draw_a(x, y)
 #             aDrawn = True
 
+def visible_faces():
+    visibleFaces = []
+    obsVert = np.array(observerVertice)
+    for face in letterAFaces:
+        vert0 = np.array(letterAvertsOg[letterAEdges[face[0]][0]])[:-1].copy()
+        vert1 = np.array(letterAvertsOg[letterAEdges[face[0]][1]])[:-1].copy()
+        vert2 = np.array(letterAvertsOg[letterAEdges[face[1]][1]])[:-1].copy()
+        if np.dot((vert0 - obsVert), np.cross((vert1 - vert0), (vert2 - vert0))) >= 0:
+            visibleFaces.append(face)
+    return visibleFaces
+
+def edges_to_draw(faces):
+    edges = []
+    for face in faces:
+        for edge in face:
+            if edge not in edges:
+                edges.append(edge)
+    return edges
+
+def calculate_a_observer(x, y, frameCount, edges):
+    transMatrix = [[1, 0, 0, 0],
+                   [0, 1, 0, 0],
+                   [0, 0, 1, 0],
+                   [x, y, 0, 1]]
+    rotMatrix = [
+        [np.cos((np.pi / (2 * totalFrames)) * frameCount), np.sin((np.pi / (2 * totalFrames)) * frameCount), 0, 0],
+        [-np.sin((np.pi / (2 * totalFrames)) * frameCount), np.cos((np.pi / (2 * totalFrames)) * frameCount), 0, 0],
+        [0, 0, 1, 0],
+        [0, 0, 0, 1]]
+    projMatrix = [[1, 0, 0, 0],
+                  [0, 1, 0, 0],
+                  [0, 0, 0, 0],
+                  [0, 0, 0, 1]]
+    letter_a_verts = [np.matmul(n, np.matmul(rotMatrix, transMatrix)) for n in letterAvertsOg]
+    letter_a_verts = np.matmul(letter_a_verts, projMatrix).tolist()
+    draw_a_edges(letter_a_verts, edges)
 
 def calculate_a(x, y, frameCount, ang):
     # global letterAvertsT, letterAEdges
@@ -151,10 +187,16 @@ def calculate_a(x, y, frameCount, ang):
 
 
 # Draw letter A edges
-def draw_a(verts):
-    for letterAedge in letterAEdges:
-        cv2.line(img, tuple(coord_to_draw(verts[letterAedge[0]])),
-                 tuple(coord_to_draw(verts[letterAedge[1]])), (255, 0, 0), 1)
+def draw_a(verts, edges):
+    for letterAEdge in letterAEdges:
+        cv2.line(img, tuple(coord_to_draw(verts[letterAEdge[0]])),
+                 tuple(coord_to_draw(verts[letterAEdge[1]])), (255, 0, 0), 1)
+
+def draw_a_edges(verts, edges):
+    for edge in edges:
+        letterAEdge = letterAEdges[edge]
+        cv2.line(img, tuple(coord_to_draw(verts[letterAEdge[0]])),
+                 tuple(coord_to_draw(verts[letterAEdge[1]])), (255, 0, 0), 1)
 
 
 # Create a black image
@@ -162,10 +204,13 @@ img = np.zeros((yDisplay, xDisplay, 3), np.uint8)  # (Y, X) do display
 # cv2.namedWindow('ESC para sair')
 # cv2.setMouseCallback('ESC para sair', draw_a_click)
 frameCount = 0
+visibleFaces = visible_faces()
+edgesToDraw = edges_to_draw(visibleFaces)
+
 while frameCount < totalFrames:
-    calculate_a(xMovInit - ((xMovInit - xMovEnd) / totalFrames) * frameCount,
-                yMovInit - ((yMovInit - yMovEnd) / totalFrames) * frameCount, frameCount, 2*np.pi/3)
-    # calculate_a(50, 50, 2*np.pi/3)
+    # calculate_a(xMovInit - ((xMovInit - xMovEnd) / totalFrames) * frameCount,
+    #             yMovInit - ((yMovInit - yMovEnd) / totalFrames) * frameCount, frameCount, 2*np.pi/3)
+    calculate_a_observer(50, 50, 0, edgesToDraw)
     sleep(0.015)
     cv2.imshow('ESC para sair', img)
     cv2.rectangle(img, (0, 0), (xDisplay, yDisplay), (0, 0, 0), -1)
