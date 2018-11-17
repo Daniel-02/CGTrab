@@ -84,16 +84,16 @@ letterAEdges = [[0, 1],
 
 letterAFaces = [[0, 3, 4, 5, 6, 2, 1],
                 [10, 13, 14, 15, 16, 12, 11],
-                [20, 11, 22, 1],
-                [20, 10, 21, 0],
-                [21, 13, 24, 3],
-                [4, 25, 14, 24],
-                [25, 15, 26, 5],
-                [6, 23, 16, 26],
-                [2, 22, 12, 23],
-                [7, 27, 17, 28],
-                [27, 18, 29, 8],
-                [28, 19, 29, 9],
+                [20, 11, 22, 1],  # Ok
+                [20, 10, 21, 0],  # Ok
+                [21, 13, 24, 3],  # Ok
+                [4, 25, 14, 24],  # Ok
+                [25, 15, 26, 5],  # Ok
+                [6, 23, 16, 26],  # Ok
+                [2, 22, 12, 23],  # Ok
+                [7, 27, 17, 28],  # Ok
+                [27, 18, 29, 8],  # Ok
+                [28, 19, 29, 9],  # Ok
                 ]
 
 xDisplay = 1200
@@ -106,6 +106,7 @@ xMovEnd = 0
 yMovEnd = 100
 totalFrames = 75
 observerVertice = [0, 0, 100]
+paintedVertice = [200, 200, 100]
 
 def convert_x_universe_to_x_display(x_u):
     global xUniverse, xDisplay
@@ -129,15 +130,24 @@ def coord_to_draw(coord):
 #             draw_a(x, y)
 #             aDrawn = True
 
-def visible_faces():
+def normal_vectors():
+    normals = []
+    for face in letterAFaces:
+        vert0 = np.array(letterAvertsOg[letterAEdges[face[0]][0]][:-1])
+        vert1 = np.array(letterAvertsOg[letterAEdges[face[0]][1]][:-1])
+        vert2 = np.array(letterAvertsOg[letterAEdges[face[1]][1]][:-1])
+        normals.append(np.cross((vert1 - vert0), (vert2 - vert0)))
+    return normals
+
+def visible_faces(normals):
     visibleFaces = []
     obsVert = np.array(observerVertice)
+    i = 0
     for face in letterAFaces:
         vert0 = np.array(letterAvertsOg[letterAEdges[face[0]][0]])[:-1].copy()
-        vert1 = np.array(letterAvertsOg[letterAEdges[face[0]][1]])[:-1].copy()
-        vert2 = np.array(letterAvertsOg[letterAEdges[face[1]][1]])[:-1].copy()
-        if np.dot((vert0 - obsVert), np.cross((vert1 - vert0), (vert2 - vert0))) >= 0:
+        if np.dot((vert0 - obsVert), normals[i]) > 0:
             visibleFaces.append(face)
+        i += 1
     return visibleFaces
 
 def edges_to_draw(faces):
@@ -148,7 +158,7 @@ def edges_to_draw(faces):
                 edges.append(edge)
     return edges
 
-def calculate_a_observer(x, y, frameCount, edges):
+def calculate_a_observer(x, y, frameCount, edges, ang):
     transMatrix = [[1, 0, 0, 0],
                    [0, 1, 0, 0],
                    [0, 0, 1, 0],
@@ -160,11 +170,30 @@ def calculate_a_observer(x, y, frameCount, edges):
         [0, 0, 0, 1]]
     projMatrix = [[1, 0, 0, 0],
                   [0, 1, 0, 0],
-                  [0, 0, 0, 0],
+                  [np.cos(ang), np.sin(ang), 0, 0],
                   [0, 0, 0, 1]]
     letter_a_verts = [np.matmul(n, np.matmul(rotMatrix, transMatrix)) for n in letterAvertsOg]
     letter_a_verts = np.matmul(letter_a_verts, projMatrix).tolist()
     draw_a_edges(letter_a_verts, edges)
+
+def calculate_a_to_paint(x, y, frameCount, ang):
+    transMatrix = [[1, 0, 0, 0],
+                   [0, 1, 0, 0],
+                   [0, 0, 1, 0],
+                   [x, y, 0, 1]]
+    rotMatrix = [
+        [np.cos((np.pi / (2 * totalFrames)) * frameCount), np.sin((np.pi / (2 * totalFrames)) * frameCount), 0, 0],
+        [-np.sin((np.pi / (2 * totalFrames)) * frameCount), np.cos((np.pi / (2 * totalFrames)) * frameCount), 0, 0],
+        [0, 0, 1, 0],
+        [0, 0, 0, 1]]
+    projMatrix = [[1, 0, 0, 0],
+                  [0, 1, 0, 0],
+                  [np.cos(ang), np.sin(ang), 0, 0],
+                  [0, 0, 0, 1]]
+    letter_a_verts = [np.matmul(n, np.matmul(rotMatrix, transMatrix)) for n in letterAvertsOg]
+    letter_a_verts = np.matmul(letter_a_verts, projMatrix).tolist()
+    paint_a_faces(letter_a_verts)
+
 
 def calculate_a(x, y, frameCount, ang):
     # global letterAvertsT, letterAEdges
@@ -198,20 +227,49 @@ def draw_a_edges(verts, edges):
         cv2.line(img, tuple(coord_to_draw(verts[letterAEdge[0]])),
                  tuple(coord_to_draw(verts[letterAEdge[1]])), (255, 0, 0), 1)
 
+def paint_a_faces(verts):
+    color = np.array([30, 135, 255])
+    i = 0
+    obsV = np.array(paintedVertice)
+    for face in letterAFaces:
+        norm = np.array(normals[i])
+        sin = np.linalg.norm(np.cross(obsV, norm))/np.linalg.norm(obsV)/np.linalg.norm(norm)
+        cos = np.dot(obsV, norm)/np.linalg.norm(obsV)/np.linalg.norm(norm)
+        print(cos)
+        paint_face(face, verts, color*sin)
+        i += 1;
+
+def paint_face(face, a_verts, color):
+    verts = []
+    for edge in edges_to_draw([face]):
+        for vert in letterAEdges[edge]:
+            if a_verts[vert] not in verts:
+                verts.append(coord_to_draw(a_verts[vert]))
+    cv2.fillPoly(img, np.array([verts]), color)
+    if face == [0, 3, 4, 5, 6, 2, 1]:
+        cv2.fillPoly(img, np.array([[coord_to_draw(a_verts[7]),
+                                     coord_to_draw(a_verts[8]),
+                                     coord_to_draw(a_verts[9])]]), (0, 0, 0))
+    if face == [10, 13, 14, 15, 16, 12, 11]:
+        cv2.fillPoly(img, np.array([[coord_to_draw(a_verts[17]),
+                                     coord_to_draw(a_verts[18]),
+                                     coord_to_draw(a_verts[19])]]), (0, 0, 0))
+
 
 # Create a black image
 img = np.zeros((yDisplay, xDisplay, 3), np.uint8)  # (Y, X) do display
 # cv2.namedWindow('ESC para sair')
 # cv2.setMouseCallback('ESC para sair', draw_a_click)
 frameCount = 0
-visibleFaces = visible_faces()
+normals = normal_vectors()
+visibleFaces = visible_faces(normals)
 edgesToDraw = edges_to_draw(visibleFaces)
-print(visibleFaces)
 
 while frameCount < totalFrames:
     # calculate_a(xMovInit - ((xMovInit - xMovEnd) / totalFrames) * frameCount,
     #             yMovInit - ((yMovInit - yMovEnd) / totalFrames) * frameCount, frameCount, 2*np.pi/3)
-    calculate_a_observer(50, 50, 0, edgesToDraw)
+    # calculate_a_observer(50, 50, 0, edgesToDraw, 2*np.pi/3)
+    calculate_a_to_paint(50, 50, 0, 2*np.pi/3)
     # calculate_a(50, 50, 0, 2*np.pi/3)
     sleep(0.015)
     cv2.imshow('ESC para sair', img)
@@ -221,6 +279,5 @@ while frameCount < totalFrames:
         frameCount = 1
     if cv2.waitKey(20) & 0xFF == 27:
         break
-
 
 cv2.destroyAllWindows()
