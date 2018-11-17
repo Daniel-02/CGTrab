@@ -234,10 +234,8 @@ def paint_a_faces(verts):
     for face in letterAFaces:
         norm = np.array(normals[i])
         sin = np.linalg.norm(np.cross(obsV, norm))/np.linalg.norm(obsV)/np.linalg.norm(norm)
-        cos = np.dot(obsV, norm)/np.linalg.norm(obsV)/np.linalg.norm(norm)
-        print(cos)
         paint_face(face, verts, color*sin)
-        i += 1;
+        i += 1
 
 def paint_face(face, a_verts, color):
     verts = []
