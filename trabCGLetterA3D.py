@@ -130,12 +130,12 @@ def coord_to_draw(coord):
 #             draw_a(x, y)
 #             aDrawn = True
 
-def normal_vectors():
+def normal_vectors(aVerts):
     normals = []
     for face in letterAFaces:
-        vert0 = np.array(letterAvertsOg[letterAEdges[face[0]][0]][:-1])
-        vert1 = np.array(letterAvertsOg[letterAEdges[face[0]][1]][:-1])
-        vert2 = np.array(letterAvertsOg[letterAEdges[face[1]][1]][:-1])
+        vert0 = np.array(aVerts[letterAEdges[face[0]][0]][:-1])
+        vert1 = np.array(aVerts[letterAEdges[face[0]][1]][:-1])
+        vert2 = np.array(aVerts[letterAEdges[face[1]][1]][:-1])
         normals.append(np.cross((vert1 - vert0), (vert2 - vert0)))
     return normals
 
@@ -158,7 +158,7 @@ def edges_to_draw(faces):
                 edges.append(edge)
     return edges
 
-def calculate_a_observer(x, y, frameCount, edges, ang):
+def calculate_a_observer(x, y, frameCount, ang):
     transMatrix = [[1, 0, 0, 0],
                    [0, 1, 0, 0],
                    [0, 0, 1, 0],
@@ -173,8 +173,11 @@ def calculate_a_observer(x, y, frameCount, edges, ang):
                   [np.cos(ang), np.sin(ang), 0, 0],
                   [0, 0, 0, 1]]
     letter_a_verts = [np.matmul(n, np.matmul(rotMatrix, transMatrix)) for n in letterAvertsOg]
+    normals = normal_vectors(letter_a_verts)
+    faces = visible_faces(normals)
+    print(faces)
     letter_a_verts = np.matmul(letter_a_verts, projMatrix).tolist()
-    draw_a_edges(letter_a_verts, edges)
+    draw_a_edges(letter_a_verts, edges_to_draw(faces))
 
 def calculate_a_to_paint(x, y, frameCount, ang):
     transMatrix = [[1, 0, 0, 0],
@@ -191,8 +194,9 @@ def calculate_a_to_paint(x, y, frameCount, ang):
                   [np.cos(ang), np.sin(ang), 0, 0],
                   [0, 0, 0, 1]]
     letter_a_verts = [np.matmul(n, np.matmul(rotMatrix, transMatrix)) for n in letterAvertsOg]
+    normals = normal_vectors(letter_a_verts)
     letter_a_verts = np.matmul(letter_a_verts, projMatrix).tolist()
-    paint_a_faces(letter_a_verts)
+    paint_a_faces(letter_a_verts, normals)
 
 
 def calculate_a(x, y, frameCount, ang):
@@ -227,7 +231,7 @@ def draw_a_edges(verts, edges):
         cv2.line(img, tuple(coord_to_draw(verts[letterAEdge[0]])),
                  tuple(coord_to_draw(verts[letterAEdge[1]])), (255, 0, 0), 1)
 
-def paint_a_faces(verts):
+def paint_a_faces(verts, normals):
     color = np.array([30, 135, 255])
     i = 0
     obsV = np.array(paintedVertice)
@@ -241,7 +245,7 @@ def paint_face(face, a_verts, color):
     verts = []
     for edge in edges_to_draw([face]):
         for vert in letterAEdges[edge]:
-            if a_verts[vert] not in verts:
+            if coord_to_draw(a_verts[vert]) not in verts:
                 verts.append(coord_to_draw(a_verts[vert]))
     cv2.fillPoly(img, np.array([verts]), color)
     if face == [0, 3, 4, 5, 6, 2, 1]:
@@ -259,15 +263,16 @@ img = np.zeros((yDisplay, xDisplay, 3), np.uint8)  # (Y, X) do display
 # cv2.namedWindow('ESC para sair')
 # cv2.setMouseCallback('ESC para sair', draw_a_click)
 frameCount = 0
-normals = normal_vectors()
-visibleFaces = visible_faces(normals)
-edgesToDraw = edges_to_draw(visibleFaces)
 
 while frameCount < totalFrames:
     # calculate_a(xMovInit - ((xMovInit - xMovEnd) / totalFrames) * frameCount,
     #             yMovInit - ((yMovInit - yMovEnd) / totalFrames) * frameCount, frameCount, 2*np.pi/3)
-    # calculate_a_observer(50, 50, 0, edgesToDraw, 2*np.pi/3)
-    calculate_a_to_paint(50, 50, 0, 2*np.pi/3)
+    # calculate_a_observer(xMovInit - ((xMovInit - xMovEnd) / totalFrames) * frameCount,
+    #             yMovInit - ((yMovInit - yMovEnd) / totalFrames) * frameCount, frameCount, 2*np.pi/3)
+    calculate_a_to_paint(xMovInit - ((xMovInit - xMovEnd) / totalFrames) * frameCount,
+                yMovInit - ((yMovInit - yMovEnd) / totalFrames) * frameCount, frameCount, 2*np.pi/3)
+    # calculate_a_observer(50, 50, 0, 2*np.pi/3)
+    # calculate_a_to_paint(50, 50, 0, 2*np.pi/3)
     # calculate_a(50, 50, 0, 2*np.pi/3)
     sleep(0.015)
     cv2.imshow('ESC para sair', img)
