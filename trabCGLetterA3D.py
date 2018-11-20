@@ -175,7 +175,6 @@ def calculate_a_observer(x, y, frameCount, ang):
     letter_a_verts = [np.matmul(n, np.matmul(rotMatrix, transMatrix)) for n in letterAvertsOg]
     normals = normal_vectors(letter_a_verts)
     faces = visible_faces(normals)
-    print(faces)
     letter_a_verts = np.matmul(letter_a_verts, projMatrix).tolist()
     draw_a_edges(letter_a_verts, edges_to_draw(faces))
 
@@ -263,24 +262,46 @@ img = np.zeros((yDisplay, xDisplay, 3), np.uint8)  # (Y, X) do display
 # cv2.namedWindow('ESC para sair')
 # cv2.setMouseCallback('ESC para sair', draw_a_click)
 frameCount = 0
+wireframe = True
+observer = False
+paint = False
+
 
 while frameCount < totalFrames:
-    # calculate_a(xMovInit - ((xMovInit - xMovEnd) / totalFrames) * frameCount,
-    #             yMovInit - ((yMovInit - yMovEnd) / totalFrames) * frameCount, frameCount, 2*np.pi/3)
-    # calculate_a_observer(xMovInit - ((xMovInit - xMovEnd) / totalFrames) * frameCount,
-    #             yMovInit - ((yMovInit - yMovEnd) / totalFrames) * frameCount, frameCount, 2*np.pi/3)
-    calculate_a_to_paint(xMovInit - ((xMovInit - xMovEnd) / totalFrames) * frameCount,
-                yMovInit - ((yMovInit - yMovEnd) / totalFrames) * frameCount, frameCount, 2*np.pi/3)
-    # calculate_a_observer(50, 50, 0, 2*np.pi/3)
-    # calculate_a_to_paint(50, 50, 0, 2*np.pi/3)
-    # calculate_a(50, 50, 0, 2*np.pi/3)
-    sleep(0.015)
+    if wireframe:
+        # calculate_a(xMovInit - ((xMovInit - xMovEnd) / totalFrames) * frameCount,
+        #             yMovInit - ((yMovInit - yMovEnd) / totalFrames) * frameCount, frameCount, 2*np.pi/3)
+        calculate_a(50, 50, 0, 2*np.pi/3)
+    if observer:
+        # calculate_a_observer(xMovInit - ((xMovInit - xMovEnd) / totalFrames) * frameCount,
+        #             yMovInit - ((yMovInit - yMovEnd) / totalFrames) * frameCount, frameCount, 2*np.pi/3)
+        calculate_a_observer(50, 50, 0, 2*np.pi/3)
+    if paint:
+        # calculate_a_to_paint(xMovInit - ((xMovInit - xMovEnd) / totalFrames) * frameCount,
+        #             yMovInit - ((yMovInit - yMovEnd) / totalFrames) * frameCount, frameCount, 2*np.pi/3)
+        calculate_a_to_paint(50, 50, 0, 2*np.pi/3)
+    sleep(0.005)
     cv2.imshow('ESC para sair', img)
     cv2.rectangle(img, (0, 0), (xDisplay, yDisplay), (0, 0, 0), -1)
     frameCount += 1
     if frameCount == totalFrames:
         frameCount = 1
-    if cv2.waitKey(20) & 0xFF == 27:
+    if cv2.waitKey(5) & 0xFF == 27:
         break
+    if cv2.waitKey(5) == ord('1'):
+        wireframe = True
+        observer = False
+        paint = False
+        frameCount = 1
+    if cv2.waitKey(5) == ord('2'):
+        observer = True
+        wireframe = False
+        paint = False
+        frameCount = 1
+    if cv2.waitKey(5) == ord('3'):
+        paint = True
+        observer = False
+        wireframe  = False
+        frameCount = 1
 
 cv2.destroyAllWindows()
