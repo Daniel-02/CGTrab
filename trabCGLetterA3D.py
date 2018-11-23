@@ -57,9 +57,9 @@ letterAEdges = [[0, 1],
                 [4, 5],
                 [5, 6],
                 [6, 3],
-                [7, 8],
-                [9, 7],
-                [8, 9],  # 9
+                [8, 7],
+                [7, 9],
+                [9, 8],  # 9
                 [11, 10],  # Invertido
                 [10, 12],  # Invertido
                 [12, 13],  # Invertido
@@ -67,9 +67,9 @@ letterAEdges = [[0, 1],
                 [15, 14],  # Invertido
                 [16, 15],  # Invertido
                 [13, 16],  # Invertido
-                [18, 17],
-                [17, 19],
-                [19, 18],  # 19
+                [17, 18],
+                [19, 17],
+                [18, 19],  # 19
                 [0, 10],
                 [1, 11],
                 [2, 12],
@@ -115,9 +115,9 @@ letterAFaces = [[0, 3, 4, 5, 6, 2, 1],
                 [25, 42, 43, 44],  # OK
                 [26, 45, 46, 47],  # Ok
                 [48, 23, 49, 50],  # Ok
-                [7, 28, 17, 51],   # Ok
-                [27, 18, 52, 8],
-                [9, 29, 19, 53],
+                [27, 17, 53, 7],   # Ok
+                [8, 29, 18, 51],
+                [28, 19, 52, 9],
                 ]
 
 xDisplay = 1200
@@ -129,7 +129,7 @@ yMovInit = 42
 xMovEnd = 0
 yMovEnd = 100
 totalFrames = 75
-observerVertice = [0, 0, 100]
+observerVertice = [200, 200, 100]
 paintedVertice = [200, 200, 100]
 
 def convert_x_universe_to_x_display(x_u):
@@ -263,14 +263,18 @@ def paint_a_faces(verts, normals):
         norm = np.array(normals[i])
         # sin = np.linalg.norm(np.cross(obsV, norm))/(np.linalg.norm(obsV)*np.linalg.norm(norm))
         cos = (np.dot(colV, norm)/(np.linalg.norm(colV)*np.linalg.norm(norm)))
-        if (cos < 0):
-            cos = cos * -1
+        if cos < 0:
+            cos = 0
         coss.append((cos, face))
-        paint_face(face, verts, color*cos)
+        # paint_face(face, verts, color*cos)
         i += 1
     coss.sort()
     for cos in coss:
-        paint_face(cos[1], verts, color*cos[0])
+        if cos[0] == 0:
+            paint_face(cos[1], verts, (0, 0, 0))
+        else:
+            paint_face(cos[1], verts, color*cos[0])
+
 
 def paint_face(face, a_verts, color):
     verts = []
