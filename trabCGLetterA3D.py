@@ -57,19 +57,19 @@ letterAEdges = [[0, 1],
                 [4, 5],
                 [5, 6],
                 [6, 3],
-                [8, 7],
+                [7, 8],
                 [9, 7],
                 [8, 9],  # 9
-                [10, 11],
+                [11, 10],  # Invertido
                 [10, 12],  # Invertido
-                [13, 12],
-                [11, 14],
-                [14, 15],
-                [15, 16],
-                [16, 13],
-                [17, 18],
+                [12, 13],  # Invertido
+                [14, 11],  # Invertido
+                [15, 14],  # Invertido
+                [16, 15],  # Invertido
+                [13, 16],  # Invertido
+                [18, 17],
                 [17, 19],
-                [18, 19],  # 19
+                [19, 18],  # 19
                 [0, 10],
                 [1, 11],
                 [2, 12],
@@ -80,20 +80,44 @@ letterAEdges = [[0, 1],
                 [7, 17],
                 [8, 18],
                 [9, 19],
+                [0, 2],    # 30
+                [12, 10],  # 31
+                [10, 0],   # 32
+                [10, 11],  # 33
+                [11, 1],   # 34
+                [1, 0],    # 35
+                [11, 14],  # 36
+                [14, 4],   # 37
+                [4, 1],    # 38
+                [14, 15],  # 39
+                [15, 5],   # 40
+                [5, 4],    # 41
+                [15, 16],  # 42
+                [16, 6],   # 43
+                [6, 5],    # 44
+                [16, 13],  # 45
+                [13, 3],   # 46
+                [3, 6],    # 47
+                [2, 3],    # 48
+                [13, 12],  # 49
+                [12, 2],   # 50
+                [17, 7],   # 51
+                [19, 9],   # 52
+                [18, 8],   # 53
                 ]
 
 letterAFaces = [[0, 3, 4, 5, 6, 2, 1],
-                [10, 13, 14, 15, 16, 12, 11],
-                [20, 11, 22, 1],  # Ok
-                [20, 10, 21, 0],  # Ok
-                [21, 13, 24, 3],  # Ok
-                [4, 25, 14, 24],  # Ok
-                [25, 15, 26, 5],  # Ok
-                [6, 23, 16, 26],  # Ok
-                [2, 22, 12, 23],  # Ok
-                [7, 27, 17, 28],  # Ok
-                [27, 18, 29, 8],  # Ok
-                [28, 19, 29, 9],  # Ok
+                [11, 12, 16, 15, 14, 13, 10],
+                [30, 22, 31, 32],  # Ok
+                [20, 33, 34, 35],  # Ok
+                [21, 36, 37, 38],  # Ok
+                [24, 39, 40, 41],  # Ok
+                [25, 42, 43, 44],  # OK
+                [26, 45, 46, 47],  # Ok
+                [48, 23, 49, 50],  # Ok
+                [7, 28, 17, 51],   # Ok
+                [27, 18, 52, 8],
+                [9, 29, 19, 53],
                 ]
 
 xDisplay = 1200
@@ -139,13 +163,13 @@ def normal_vectors(aVerts):
         normals.append(np.cross((vert1 - vert0), (vert2 - vert0)))
     return normals
 
-def visible_faces(normals):
+def visible_faces(normals, aVerts):
     visibleFaces = []
     obsVert = np.array(observerVertice)
     i = 0
     for face in letterAFaces:
-        vert0 = np.array(letterAvertsOg[letterAEdges[face[0]][0]])[:-1].copy()
-        if np.dot((vert0 - obsVert), normals[i]) > 0:
+        vert0 = np.array(aVerts[letterAEdges[face[0]][0]][:-1])
+        if np.dot((vert0 - obsVert), normals[i]) >= 0:
             visibleFaces.append(face)
         i += 1
     return visibleFaces
@@ -174,7 +198,7 @@ def calculate_a_observer(x, y, frameCount, ang):
                   [0, 0, 0, 1]]
     letter_a_verts = [np.matmul(n, np.matmul(rotMatrix, transMatrix)) for n in letterAvertsOg]
     normals = normal_vectors(letter_a_verts)
-    faces = visible_faces(normals)
+    faces = visible_faces(normals, letter_a_verts)
     letter_a_verts = np.matmul(letter_a_verts, projMatrix).tolist()
     draw_a_edges(letter_a_verts, edges_to_draw(faces))
 
@@ -233,12 +257,20 @@ def draw_a_edges(verts, edges):
 def paint_a_faces(verts, normals):
     color = np.array([30, 135, 255])
     i = 0
-    obsV = np.array(paintedVertice)
+    colV = np.array(paintedVertice)
+    coss = []
     for face in letterAFaces:
         norm = np.array(normals[i])
-        sin = np.linalg.norm(np.cross(obsV, norm))/np.linalg.norm(obsV)/np.linalg.norm(norm)
-        paint_face(face, verts, color*sin)
+        # sin = np.linalg.norm(np.cross(obsV, norm))/(np.linalg.norm(obsV)*np.linalg.norm(norm))
+        cos = (np.dot(colV, norm)/(np.linalg.norm(colV)*np.linalg.norm(norm)))
+        if (cos < 0):
+            cos = cos * -1
+        coss.append((cos, face))
+        paint_face(face, verts, color*cos)
         i += 1
+    coss.sort()
+    for cos in coss:
+        paint_face(cos[1], verts, color*cos[0])
 
 def paint_face(face, a_verts, color):
     verts = []
@@ -251,7 +283,7 @@ def paint_face(face, a_verts, color):
         cv2.fillPoly(img, np.array([[coord_to_draw(a_verts[7]),
                                      coord_to_draw(a_verts[8]),
                                      coord_to_draw(a_verts[9])]]), (0, 0, 0))
-    if face == [10, 13, 14, 15, 16, 12, 11]:
+    if face == [11, 12, 16, 15, 14, 13, 10]:
         cv2.fillPoly(img, np.array([[coord_to_draw(a_verts[17]),
                                      coord_to_draw(a_verts[18]),
                                      coord_to_draw(a_verts[19])]]), (0, 0, 0))
