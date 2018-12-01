@@ -84,11 +84,8 @@ xDisplay = 1200
 yDisplay = 900
 xUniverse = 100
 yUniverse = 100
-xMovInit = 100
-yMovInit = 42
-xMovEnd = 0
-yMovEnd = 100
 totalFrames = 100
+projAngle = 2*np.pi/3
 quatAxis = np.array([1, 1, 1])
 rotAngle = 2*np.pi
 
@@ -124,19 +121,18 @@ def trans_rot_points(points, x, y, frameCount):
     return tempPoints
 
 
-def proj_points(points, ang):
+def proj_points(points):
     projMatrix = [[1, 0, 0, 0],
                   [0, 1, 0, 0],
-                  [np.cos(ang), np.sin(ang), 0, 0],
+                  [np.cos(projAngle), np.sin(projAngle), 0, 0],
                   [0, 0, 0, 1]]
     return np.matmul(points, projMatrix).tolist()
 
 
-
-
-def calculate_a(x, y, frameCount, ang):
+def calculate_a(x, y, frameCount):
     letter_a_verts = trans_rot_points(letterAvertsOg, x, y, frameCount)
-    letter_a_verts = proj_points(letter_a_verts, ang)
+    calc_a_curves(letter_a_verts)
+    letter_a_verts = proj_points(letter_a_verts)
     draw_a_edges(letter_a_verts, letterAEdges)
 
 
@@ -146,18 +142,17 @@ def draw_a_edges(verts, edges):
                  tuple(coord_to_draw(verts[letterAEdge[1]])), (255, 0, 0), 1)
 
 
-def draw_a_curves(curves):
-    for curve in curves:
-        cv2.polylines(img, [np.array(curve_to_display(curve), np.int32)], False, (255, 0, 0), 1)
-
-
-def draw_A_curves(x, y, frameCount, ang):
-    letter_a_verts = trans_rot_points(letterAvertsOg, x, y, frameCount)
+def calc_a_curves(letter_a_verts):
     curves = []
     for curveVerts in letterACurves:
         curves.append(proj_points(calc_bezier(letter_a_verts[curveVerts[0]], letter_a_verts[curveVerts[1]],
-                                  letter_a_verts[curveVerts[2]], letter_a_verts[curveVerts[3]]), ang))
+                                  letter_a_verts[curveVerts[2]], letter_a_verts[curveVerts[3]])))
     draw_a_curves(curves)
+
+
+def draw_a_curves(curves):
+    for curve in curves:
+        cv2.polylines(img, [np.array(curve_to_display(curve), np.int32)], False, (255, 0, 0), 1)
 
 
 def calc_bezier(bStart, bInt1, bInt2, bEnd):
@@ -182,8 +177,7 @@ img = np.zeros((yDisplay, xDisplay, 3), np.uint8)  # (Y, X) do display
 frameCount = 0
 
 while frameCount < totalFrames:
-    calculate_a(50, 50, frameCount, 2*np.pi/3)
-    draw_A_curves(50, 50, frameCount, 2*np.pi/3)
+    calculate_a(50, 50, frameCount)
     sleep(0.01)
     cv2.imshow('ESC para sair', img)
     cv2.rectangle(img, (0, 0), (xDisplay, yDisplay), (0, 0, 0), -1)
